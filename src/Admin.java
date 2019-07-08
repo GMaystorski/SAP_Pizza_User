@@ -67,6 +67,15 @@ public class Admin extends User{
 			}
 		});
 		
+		b4.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				frame.dispose();
+				printout.println("4");
+				makeAdmin();
+			}
+		});
+		
 		//Set frame attributes//
 		frame.setLayout(new GridLayout(5,1));
 		frame.setVisible(true);
@@ -198,6 +207,52 @@ public class Admin extends User{
 		
 	}
 	
+	public void makeAdmin() {
+		try {
+			List<Object> usernames = (List<Object>) objScan.readObject();
+			JFrame frame = new JFrame("Make Admin");
+			frame.setSize(500, 50*usernames.size());
+			frame.setLayout(new GridLayout(2+usernames.size(),3));
+			frame.add(new JLabel("Username"));
+			frame.add(new JLabel(" "));
+			frame.add(new JLabel(" "));
+			
+			for(int i = 0 ; i < usernames.size(); i++) {
+				JTextField t1 = new JTextField(usernames.get(i).toString());
+				t1.setEditable(false);
+				frame.add(t1);
+				JButton b1 = new JButton("Make Admin");
+				b1.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent event) {
+						changeToAdmin(t1.getText());
+					}
+				});
+				frame.add(b1);
+				JButton b2 = new JButton("Make User");
+				b2.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent event) {
+						changeToClient(t1.getText());
+					}
+				});
+				frame.add(b2);
+			}
+			
+			JButton back = new JButton("Back");
+			goBack(frame,back,printout);
+			frame.add(back);
+			
+			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			frame.setVisible(true);
+			
+		}
+		catch(IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	
 	public void updateProduct(String name,String quantity,double price) {
 
 		try {
@@ -218,6 +273,7 @@ public class Admin extends User{
 	}
 
 	public void deleteProduct(String name) {
+
 		try {
 			printout.println("delete");
 			printout.println(name);
@@ -230,6 +286,37 @@ public class Admin extends User{
 		catch(IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public void changeToAdmin(String username) {
+		try {
+			printout.println("1");
+			printout.println(username);
+			int i = (int) objScan.readObject();
+			if (i == 0) {
+				JOptionPane.showMessageDialog(null, "User is already an admin!");
+			}
+			else JOptionPane.showMessageDialog(null, "User changed to admin!");
+		}
+		catch(IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void changeToClient(String username) {
+		try {
+			printout.println("0");
+			printout.println(username);
+			int i = (int) objScan.readObject();
+			if (i == 0) {
+				JOptionPane.showMessageDialog(null, "User is already a client!");
+			}
+			else JOptionPane.showMessageDialog(null, "User changed to client!");
+		}
+		catch(IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		
 	}
 	
 	public void setObjScan(ObjectInputStream objScan) {

@@ -119,8 +119,10 @@ public class User {
 					 }
 				 }
 				 catch(RegistrationException | IOException | ClassNotFoundException e) {
-					 closeResources();
-					 e.printStackTrace();
+					// closeResources();
+					 System.out.println(e.getMessage());
+					frame.dispose();
+					showMenu();
 				 }
 			 }
 		 });
