@@ -22,6 +22,7 @@ public class Client extends User{
 	private PrintStream printout;
 	private String username;
 	private List<String> cart;
+	private int move = 0;
 	
 	public Client(ObjectInputStream objScan, PrintStream printout,String username) {
 		setObjScan(objScan);
@@ -70,6 +71,15 @@ public class Client extends User{
 				printout.println("2");
 				frame.dispose();
 				viewProducts(b1);
+			}
+		});
+		
+		b3.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				printout.println("3");
+				frame.dispose();
+				optionThree(b1);
 			}
 		});
 		
@@ -237,6 +247,113 @@ public class Client extends User{
 		}
 	}
 	
+	public void optionThree(JButton button) {
+		try {
+			int count = (int) objScan.readObject();
+			if(count == 0) {
+				JOptionPane.showMessageDialog(null, "You have no orders yet!");
+				button.doClick();
+			}
+			else {
+				List<List<String>> carts = new ArrayList<>();
+				String[] locations = new String[count];
+				for(int i = 0 ; i < count ; i++) {
+					carts.add((List<String>) objScan.readObject());
+					locations[i] = objScan.readObject().toString();
+				}
+				reCreateOrder(carts,locations);
+			}
+		} catch (ClassNotFoundException | IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void reCreateOrder(List<List<String>> cart,String[] location) {
+		double sum = 0;
+		JFrame frame = new JFrame("Repeat order");
+		frame.setSize(600,100*cart.get(move).size()/3);
+		frame.setLayout(new GridLayout(2+(cart.get(move).size()/3),4));
+		frame.add(new JLabel("Product name"));
+		frame.add(new JLabel("Quantity in cart"));
+		frame.add(new JLabel("Price"));
+		
+		JTextField total = new JTextField();
+		total.setEditable(false);
+
+		frame.add(total);
+		
+		for(int i = 0 ; i < cart.get(move).size() ; i+=3) {
+			JTextField t1 = new JTextField(cart.get(move).get(i));
+			t1.setEditable(false);
+			frame.add(t1);
+			
+			JTextField t2 = new JTextField(cart.get(move).get(i+1));
+			t2.setEditable(false);
+			frame.add(t2);
+			
+			JTextField t3 = new JTextField(cart.get(move).get(i+2));
+			t3.setEditable(false);
+			frame.add(t3);
+			
+			double temp = Integer.parseInt(cart.get(move).get(i+1))*Double.parseDouble(cart.get(move).get(i+2));
+			JTextField t4 = new JTextField("Subtotal: " + temp);
+			t4.setEditable(false);
+			frame.add(t4);
+			sum+=temp;
+		}
+		
+		total.setText("Total: " + sum);
+		
+		JButton back = new JButton("Back");
+		goBack(frame,back,printout);
+		frame.add(back);
+		
+		JButton previous = new JButton("Previous");
+		JButton next = new JButton("Next");
+		previous.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				if(move == 0 ) {
+					JOptionPane.showMessageDialog(null, "No previous order!");
+				}
+				else {
+					frame.dispose();
+					move--;
+					reCreateOrder(cart,location);
+				}
+			}
+		});
+		next.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				if(move == (cart.size() - 1) ) {
+					JOptionPane.showMessageDialog(null, "No next order!");
+				}
+				else {
+					frame.dispose();
+					move++;
+					reCreateOrder(cart,location);
+				}
+			}
+		});
+		frame.add(previous);
+		frame.add(next);
+		
+		JButton button = new JButton("Order");
+		button.addActionListener(new ActionListener() {
+			@Override 
+			public void actionPerformed(ActionEvent event) {
+				replaceCart(cart.get(move));
+				sendOrder(location[move]);
+				
+			}
+		});
+		frame.add(button);
+		
+		frame.setVisible(true);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	}
+	
 	public void enterLocation() {
 		JFrame frame = new JFrame("Enter location");
 		frame.setSize(300, 100);
@@ -254,6 +371,11 @@ public class Client extends User{
 		frame.add(b1);
 		frame.setVisible(true);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	}
+	
+	public void replaceCart(List<String> newCart) {
+		cart.clear();
+		newCart.forEach(x -> cart.add(x));
 	}
 	
 	public int removeFromCart(String product) {
