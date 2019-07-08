@@ -51,9 +51,15 @@ public class Client extends User{
 		b1.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent event) {
-				printout.println("1");
-				frame.dispose();
-				enterLocation();
+				if(cart.isEmpty()) {
+					JOptionPane.showMessageDialog(null, "Your cart is empty! Please select products and come back.");
+					b2.doClick();
+				}
+				else {
+					printout.println("1");
+					frame.dispose();
+					enterLocation();
+				}
 			}
 		});
 		
@@ -63,7 +69,7 @@ public class Client extends User{
 			public void actionPerformed(ActionEvent event) {
 				printout.println("2");
 				frame.dispose();
-				viewProducts();
+				viewProducts(b1);
 			}
 		});
 		
@@ -76,12 +82,30 @@ public class Client extends User{
 	}
 	
 	
-	public void viewProducts() {
+	public void viewProducts(JButton button) {
 		try {
 			List<Object> products = (List<Object>) objScan.readObject();
 			JFrame frame = new JFrame("View menu");
 			frame.setSize(750,50*(products.size()/3));
 			frame.setLayout(new GridLayout(2+(products.size()/3),5));
+			
+			JButton back = new JButton("Back");
+			goBack(frame,back,printout);
+			frame.add(back);
+			frame.add(new JLabel(" "));
+			frame.add(new JLabel(" "));
+			frame.add(new JLabel(" "));
+			JButton toOrder = new JButton("Proceed to order");
+			toOrder.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					printout.println("proceed");
+					frame.dispose();
+					button.doClick();
+				}
+			});
+			frame.add(toOrder);
+			
 			frame.add(new JLabel("Product name"));
 			frame.add(new JLabel("Quantity"));
 			frame.add(new JLabel("Price(lv.)"));
@@ -118,9 +142,7 @@ public class Client extends User{
 				});
 				frame.add(remove);	
 			}
-			JButton back = new JButton("Back");
-			goBack(frame,back,printout);
-			frame.add(back);
+			
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			frame.setVisible(true);
 		}
@@ -147,31 +169,17 @@ public class Client extends User{
 	public void createOrder(String location) {
 		double sum = 0;
 		JFrame frame = new JFrame("Create an order");
-		frame.setSize(600,80*cart.size()/3);
+		frame.setSize(600,100*cart.size()/3);
 		frame.setLayout(new GridLayout(2+(cart.size()/3),4));
 		frame.add(new JLabel("Product name"));
 		frame.add(new JLabel("Quantity in cart"));
 		frame.add(new JLabel("Price"));
 		
-		JButton button = new JButton("Create");
+		JButton button = new JButton("Order");
 		button.addActionListener(new ActionListener() {
 			@Override 
 			public void actionPerformed(ActionEvent event) {
-				try {
-					printout.println("create");
-					printout.println(location);
-					sendCart();
-					int i = (int)objScan.readObject();
-					if(i == 0) {
-						JOptionPane.showMessageDialog(null, "Order creation failed!");
-					}
-					else if(i == 1) {
-						JOptionPane.showMessageDialog(null, "Order creation successful!");
-					}
-				}
-				catch(IOException | ClassNotFoundException e) {
-					e.printStackTrace();
-				}
+				sendOrder(location);
 			}
 		});
 		frame.add(button);
@@ -209,6 +217,24 @@ public class Client extends User{
 		
 		frame.setVisible(true);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	}
+	
+	public void sendOrder(String location) {
+		try {
+			printout.println("create");
+			printout.println(location);
+			sendCart();
+			int i = (int)objScan.readObject();
+			if(i == 0) {
+				JOptionPane.showMessageDialog(null, "Order creation failed!");
+			}
+			else if(i == 1) {
+				JOptionPane.showMessageDialog(null, "Order creation successful!");
+			}
+		}
+		catch(IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public void enterLocation() {
