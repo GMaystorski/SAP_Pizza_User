@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.PrintStream;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JButton;
@@ -22,6 +23,7 @@ public class Admin extends User{
 	private ObjectInputStream objScan;
 	private PrintStream printout;
 	private String username;
+	private int move = 0;
 
 	public Admin(ObjectInputStream objScan,PrintStream printout,String username) {
 		setObjScan(objScan);
@@ -64,6 +66,16 @@ public class Admin extends User{
 					frame.dispose();
 					printout.println("2");
 					modifyProduct();
+			}
+		});
+		
+		b3.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				frame.dispose();
+				printout.println("3");
+				move = 0;
+				setDate();
 			}
 		});
 		
@@ -155,6 +167,7 @@ public class Admin extends User{
 	}
 	
 	public void modifyProduct()  {
+
 		try {
 			List<Object> products = (List<Object>) objScan.readObject();
 			JFrame frame = new JFrame("Manage products");
@@ -204,6 +217,161 @@ public class Admin extends User{
 		catch(IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
+		
+	}
+
+	public void setDate() {
+		JFrame frame = new JFrame("Set date interval");
+		frame.setSize(300, 100);
+		frame.setLayout(new GridLayout(2,3));
+		
+		frame.add(new JLabel("From: "));
+		frame.add(new JLabel("To: "));
+		frame.add(new JLabel(" "));
+		
+		JTextField text1 = new JTextField();
+		frame.add(text1);
+		JTextField text2 = new JTextField();
+		frame.add(text2);
+		
+		JButton button = new JButton("Go");
+		button.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				if(text1.getText().isEmpty() && text2.getText().isEmpty()) {
+					frame.dispose();
+					getOrders(null,null);
+				}
+				else {
+					frame.dispose();
+					getOrders(text1.getText(),text2.getText());
+				}
+			}
+		});
+		frame.add(button);
+		
+		frame.setVisible(true);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	}
+	
+	public void getOrders(String dateFrom , String dateTo){
+		try {
+			List<List<String>> carts = new ArrayList<>();
+			List<List<Object>> orders = new ArrayList<>();
+			if(dateFrom == null && dateTo == null) {
+				printout.println("empty");
+			}
+			else {
+				printout.println("setDates");
+				printout.println(dateFrom);
+				printout.println(dateTo);
+			}
+			int size = (int) objScan.readObject();
+			if(size == 0) {
+				JOptionPane.showMessageDialog(null, "There are no orders yet!");
+				showMenu();
+			}
+			else {
+				for (int i = 0 ; i < size ; i++) {
+					carts.add((List<String>) objScan.readObject());
+				}
+				orders = (List<List<Object>>) objScan.readObject();
+				viewOrders(orders,carts);
+			}
+		}
+		catch(ClassNotFoundException | IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	public void viewOrders(List<List<Object>> orders,List<List<String>> carts) {
+		double sum = 0;
+		JFrame frame = new JFrame("View Orders");
+		frame.setSize(500,600);
+		frame.add(new JLabel("Username"));
+		frame.add(new JLabel("Date"));
+		frame.add(new JLabel("Location"));
+		
+		JTextField t1 = new JTextField(orders.get(move).get(1).toString());
+		t1.setEditable(false);
+		frame.add(t1);
+			
+		JTextField t2 = new JTextField(orders.get(move).get(2).toString());
+		t2.setEditable(false);
+		frame.add(t2);
+			
+		JTextField t3 = new JTextField(orders.get(move).get(3).toString());
+		t3.setEditable(false);
+		frame.add(t3);
+		
+		frame.add(new JLabel("Product name"));
+		frame.add(new JLabel("Quantity in cart"));
+		frame.add(new JLabel("Price"));
+		
+		
+		for(int i = 0 ; i < carts.get(move).size() ; i+=3) {
+			JTextField temp1 = new JTextField(carts.get(move).get(i));
+			t1.setEditable(false);
+			frame.add(temp1);
+			
+			JTextField temp2 = new JTextField(carts.get(move).get(i+1));
+			t2.setEditable(false);
+			frame.add(temp2);
+			
+			JTextField temp3 = new JTextField(carts.get(move).get(i+2));
+			t3.setEditable(false);
+			frame.add(temp3);
+			
+			double temp = Integer.parseInt(carts.get(move).get(i+1))*Double.parseDouble(carts.get(move).get(i+2));
+			sum+=temp;
+		}
+		
+		frame.add(new JLabel(" "));
+		frame.add(new JLabel(" "));
+		
+		JTextField total = new JTextField("Total :" + sum);
+		total.setEditable(false);
+		frame.add(total);
+		
+		JButton back = new JButton("Back");
+		goBack(frame,back,printout);
+		frame.add(back);
+		
+		JButton previous = new JButton("Previous");
+		JButton next = new JButton("Next");
+		previous.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				if(move == 0 ) {
+					JOptionPane.showMessageDialog(null, "No previous order!");
+				}
+				else {
+					frame.dispose();
+					move--;
+					viewOrders(orders,carts);
+				}
+			}
+		});
+		next.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				if(move == (orders.size() - 1) ) {
+					JOptionPane.showMessageDialog(null, "No next order!");
+				}
+				else {
+					frame.dispose();
+					move++;
+					viewOrders(orders,carts);
+				}
+			}
+		});
+		frame.add(previous);
+		frame.add(next);
+		
+		frame.setLayout(new GridLayout(0,3));
+		frame.setVisible(true);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 	}
 	

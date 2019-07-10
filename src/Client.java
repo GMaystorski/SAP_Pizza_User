@@ -261,14 +261,14 @@ public class Client extends User{
 					carts.add((List<String>) objScan.readObject());
 					locations[i] = objScan.readObject().toString();
 				}
-				reCreateOrder(carts,locations);
+				reCreateOrder(carts,locations,button);
 			}
 		} catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	public void reCreateOrder(List<List<String>> cart,String[] location) {
+	public void reCreateOrder(List<List<String>> cart,String[] location,JButton b1) {
 		double sum = 0;
 		JFrame frame = new JFrame("Repeat order");
 		frame.setSize(600,100*cart.get(move).size()/3);
@@ -319,7 +319,7 @@ public class Client extends User{
 				else {
 					frame.dispose();
 					move--;
-					reCreateOrder(cart,location);
+					reCreateOrder(cart,location,b1);
 				}
 			}
 		});
@@ -332,7 +332,7 @@ public class Client extends User{
 				else {
 					frame.dispose();
 					move++;
-					reCreateOrder(cart,location);
+					reCreateOrder(cart,location,b1);
 				}
 			}
 		});
@@ -345,7 +345,8 @@ public class Client extends User{
 			public void actionPerformed(ActionEvent event) {
 				replaceCart(cart.get(move));
 				sendOrder(location[move]);
-				
+				frame.dispose();
+				optionThree(b1);
 			}
 		});
 		frame.add(button);
