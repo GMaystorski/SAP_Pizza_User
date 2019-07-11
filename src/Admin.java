@@ -1,4 +1,3 @@
-import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -6,7 +5,6 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.PrintStream;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,16 +20,15 @@ public class Admin extends User{
 	//private Socket socket;
 	private ObjectInputStream objScan;
 	private PrintStream printout;
-	private String username;
 	private int move = 0;
 
-	public Admin(ObjectInputStream objScan,PrintStream printout,String username) {
+	public Admin(ObjectInputStream objScan,PrintStream printout) {
 		setObjScan(objScan);
 		setPrintout(printout);
-		this.username = username;
 		showMenu();
 	}
 	
+	////SHOW MENU//////////////////////////
 	@Override
 	public void showMenu() {
 		
@@ -84,7 +81,7 @@ public class Admin extends User{
 			public void actionPerformed(ActionEvent event) {
 				frame.dispose();
 				printout.println("4");
-				makeAdmin();
+				makeAdmin(b5);
 			}
 		});
 		
@@ -95,14 +92,10 @@ public class Admin extends User{
 		
 		logOut(frame,b5,printout);
 	}
+
 	
-	@Override
-	public void restart(PrintStream printout) {
-		super.setPrintout(this.printout);
-		super.setObjScan(this.objScan);
-		super.showMenu();
-	}
-	
+	////FIRST OPTION - ADD PRODUCT////////////////
+	///////////////////////////////////////////////
 	public void addProduct() {
 		
 		printout.println("1");
@@ -166,6 +159,9 @@ public class Admin extends User{
 		
 	}
 	
+	
+	////SECOND OPTION - UPDATE/DELETE PRODUCTS + HELPER METHODS//////////////////
+	//////////////////////////////////////////////////////////////////////////
 	public void modifyProduct()  {
 
 		try {
@@ -187,11 +183,12 @@ public class Admin extends User{
 				frame.add(b2);
 				JTextField b3 = new JTextField(products.get(i+2).toString());
 				frame.add(b3);
+				String oldName = products.get(i).toString();
 				JButton up = new JButton("Update");
 				up.addActionListener(new ActionListener() {
 					@Override
 					public void actionPerformed(ActionEvent event) {
-						updateProduct(b1.getText(),b2.getText(),Double.parseDouble(b3.getText()));
+						updateProduct(b1.getText(),b2.getText(),b3.getText(),oldName);
 						frame.dispose();
 						modifyProduct();
 					}
@@ -220,6 +217,45 @@ public class Admin extends User{
 		
 	}
 
+	public void updateProduct(String name,String quantity,String price,String oldName) {
+
+		try {
+			printout.println("update");
+			printout.println(name);
+			printout.println(quantity);
+			printout.println(price);
+			printout.println(oldName);
+			int i = (int) objScan.readObject();
+			
+			if(i == 0) {
+				JOptionPane.showMessageDialog(null, "Update failed!");
+			}
+			else JOptionPane.showMessageDialog(null, "Update successful!");
+		}
+		catch(IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void deleteProduct(String name) {
+		try {
+			printout.println("delete");
+			printout.println(name);
+			int i = (int) objScan.readObject();
+			if(i == 0) {
+				JOptionPane.showMessageDialog(null, "Delete failed!");
+			}
+			else JOptionPane.showMessageDialog(null, "Delete successful!");
+		}
+		catch(IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+
+	
+	
+	////THIRD OPTION GET ORDERS BY DATE OR ALL //////////////////////////////
+	////////////////////////////////////////////////////////////////////////
 	public void setDate() {
 		JFrame frame = new JFrame("Set date interval");
 		frame.setSize(300, 100);
@@ -238,13 +274,14 @@ public class Admin extends User{
 		button.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent event) {
-				if(text1.getText().isEmpty() && text2.getText().isEmpty()) {
-					frame.dispose();
-					getOrders(null,null);
-				}
-				else {
+				if(!text1.getText().isEmpty() && !text2.getText().isEmpty()) {
 					frame.dispose();
 					getOrders(text1.getText(),text2.getText());
+				}
+				else {
+					JOptionPane.showMessageDialog(null, "You have to fill in both dates! Setting default values!");
+					frame.dispose();
+					getOrders(null,null);
 				}
 			}
 		});
@@ -375,7 +412,11 @@ public class Admin extends User{
 		
 	}
 	
-	public void makeAdmin() {
+	
+
+	////FOURTH OPTION CHANGE USER TO ADMIN OR CLIENT/////////////////////////
+	//////////////////////////////////////////////////////////////////////////
+	public void makeAdmin(JButton button) {
 		try {
 			List<Object> usernames = (List<Object>) objScan.readObject();
 			JFrame frame = new JFrame("Make Admin");
@@ -393,15 +434,15 @@ public class Admin extends User{
 				b1.addActionListener(new ActionListener() {
 					@Override
 					public void actionPerformed(ActionEvent event) {
-						changeToAdmin(t1.getText());
+						changeUser(t1.getText(),1);
 					}
 				});
 				frame.add(b1);
-				JButton b2 = new JButton("Make User");
+				JButton b2 = new JButton("Make Client");
 				b2.addActionListener(new ActionListener() {
 					@Override
 					public void actionPerformed(ActionEvent event) {
-						changeToClient(t1.getText());
+						changeUser(t1.getText(),0);
 					}
 				});
 				frame.add(b2);
@@ -420,73 +461,32 @@ public class Admin extends User{
 		}
 	}
 	
-	
-	public void updateProduct(String name,String quantity,double price) {
-
+	public void changeUser(String username,int type) {
 		try {
-			printout.println("update");
-			printout.println(name);
-			printout.println(quantity);
-			printout.println(price);
-			int i = (int) objScan.readObject();
-			
-			if(i == 0) {
-				JOptionPane.showMessageDialog(null, "Update failed!");
-			}
-			else JOptionPane.showMessageDialog(null, "Update successful!");
-		}
-		catch(IOException | ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-	}
-
-	public void deleteProduct(String name) {
-
-		try {
-			printout.println("delete");
-			printout.println(name);
-			int i = (int) objScan.readObject();
-			if(i == 0) {
-				JOptionPane.showMessageDialog(null, "Delete failed!");
-			}
-			else JOptionPane.showMessageDialog(null, "Delete successful!");
-		}
-		catch(IOException | ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	public void changeToAdmin(String username) {
-		try {
-			printout.println("1");
+			printout.println(String.valueOf(type));
 			printout.println(username);
 			int i = (int) objScan.readObject();
 			if (i == 0) {
-				JOptionPane.showMessageDialog(null, "User is already an admin!");
+				JOptionPane.showMessageDialog(null, "User is already " + (type == 0 ? "a client!" : "an admin!"));
 			}
-			else JOptionPane.showMessageDialog(null, "User changed to admin!");
+			else JOptionPane.showMessageDialog(null, "User changed to " + (type == 0 ? "client!" : "admin!"));
 		}
 		catch(IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	public void changeToClient(String username) {
-		try {
-			printout.println("0");
-			printout.println(username);
-			int i = (int) objScan.readObject();
-			if (i == 0) {
-				JOptionPane.showMessageDialog(null, "User is already a client!");
-			}
-			else JOptionPane.showMessageDialog(null, "User changed to client!");
-		}
-		catch(IOException | ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-		
-	}
+
 	
+	//MISCELLANEOUS METHODS///////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////
+	@Override
+	public void restart(PrintStream printout) {
+		super.setPrintout(this.printout);
+		super.setObjScan(this.objScan);
+		super.showMenu();
+	}
+
 	public void setObjScan(ObjectInputStream objScan) {
 		this.objScan = objScan;
 	}

@@ -1,11 +1,9 @@
-import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.PrintStream;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,23 +15,22 @@ import javax.swing.JTextField;
 
 public class Client extends User{
 	
-	//private Socket socket;
 	private ObjectInputStream objScan;
 	private PrintStream printout;
-	private String username;
 	private List<String> cart;
 	private int move = 0;
 	
-	public Client(ObjectInputStream objScan, PrintStream printout,String username) {
+	public Client(ObjectInputStream objScan, PrintStream printout) {
 		setObjScan(objScan);
 		setPrintout(printout);
-		this.username = username;
 		cart = new ArrayList<>();
 		showMenu();
 	}
 	
+	//SHOW MENU/////////////////////////////////////////////
 	@Override
 	public void showMenu() {
+
 		//Create frame//
 		JFrame frame = new JFrame();
 		frame.setTitle("Menu");
@@ -83,15 +80,124 @@ public class Client extends User{
 			}
 		});
 		
+		logOut(frame,b4,printout);
+		
 		//Set frame attributes//
 		frame.setLayout(new GridLayout(4,1));
 		frame.setVisible(true);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
-		logOut(frame,b4,printout);
 	}
 	
 	
+   //FIRST OPTION - CREATE ORDER + HELPER METHODS//////////////////////
+	///////////////////////////////////////////////////////////////////
+	public void enterLocation() {
+		JFrame frame = new JFrame("Enter location");
+		frame.setSize(300, 100);
+		frame.setLayout(new GridLayout(1,2));
+		JTextField t1 = new JTextField();
+		frame.add(t1);
+		JButton b1 = new JButton("Confirm");
+		b1.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				if(t1.getText().isEmpty()){
+					JOptionPane.showMessageDialog(null, "Please enter a location!");
+				}
+				else {
+					frame.dispose();
+					createOrder(t1.getText());
+				}
+				
+			}
+		});
+		frame.add(b1);
+		frame.setVisible(true);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	}
+
+	public void createOrder(String location) {
+		double sum = 0;
+		JFrame frame = new JFrame("Create an order");
+		frame.setSize(600,100*cart.size()/3);
+		frame.setLayout(new GridLayout(2+(cart.size()/3),4));
+		frame.add(new JLabel("Product name"));
+		frame.add(new JLabel("Quantity in cart"));
+		frame.add(new JLabel("Price"));
+		
+		JButton button = new JButton("Order");
+		button.addActionListener(new ActionListener() {
+			@Override 
+			public void actionPerformed(ActionEvent event) {
+				sendOrder(location,cart);
+			}
+		});
+		frame.add(button);
+		
+		for(int i = 0 ; i < cart.size() ; i+=3) {
+			JTextField t1 = new JTextField(cart.get(i));
+			t1.setEditable(false);
+			frame.add(t1);
+			
+			JTextField t2 = new JTextField(cart.get(i+1));
+			t2.setEditable(false);
+			frame.add(t2);
+			
+			JTextField t3 = new JTextField(cart.get(i+2));
+			t3.setEditable(false);
+			frame.add(t3);
+			
+			double temp = Integer.parseInt(cart.get(i+1))*Double.parseDouble(cart.get(i+2));
+			JTextField t4 = new JTextField("Subtotal: " + temp);
+			t4.setEditable(false);
+			frame.add(t4);
+			sum+=temp;
+		}
+		
+		JButton back = new JButton("Back");
+		goBack(frame,back,printout);
+		frame.add(back);
+		
+		frame.add(new JLabel(" "));
+		frame.add(new JLabel(" "));
+		
+		JTextField total = new JTextField("Total: " + sum);
+		total.setEditable(false);
+		frame.add(total);
+		
+		frame.setVisible(true);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	}
+
+	public void sendOrder(String location,List<String> cart) {
+		try {
+			printout.println("create");
+			printout.println(location);
+			sendCart(cart);
+			int i = (int)objScan.readObject();
+			if(i == 0) {
+				JOptionPane.showMessageDialog(null, "Order creation failed!");
+			}
+			else if(i == 1) {
+				JOptionPane.showMessageDialog(null, "Order creation successful!");
+			}
+		}
+		catch(IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void sendCart(List<String> cart) {
+		printout.println(String.valueOf(cart.size()));
+		for(String str : cart) {
+			printout.println(str);
+		}
+	}
+
+	
+	//SECOND OPTION - VIEW PRODUCTS AND ADD + REMOVE FROM CART , ALSO PROCEED TO ORDER////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	public void viewProducts(JButton button) {
 		try {
 			List<Object> products = (List<Object>) objScan.readObject();
@@ -137,7 +243,6 @@ public class Client extends User{
 					@Override
 					public void actionPerformed(ActionEvent event) {
 						int amount = addToCart(b1.getText(),b3.getText());
-						printCart();
 						JOptionPane.showMessageDialog(null, "You have " + amount + " " + b1.getText()+ (amount>1 ? "'s " : " ") + "in your cart!");
 					}
 				});
@@ -176,77 +281,25 @@ public class Client extends User{
 			}
 	}
 	
-	public void createOrder(String location) {
-		double sum = 0;
-		JFrame frame = new JFrame("Create an order");
-		frame.setSize(600,100*cart.size()/3);
-		frame.setLayout(new GridLayout(2+(cart.size()/3),4));
-		frame.add(new JLabel("Product name"));
-		frame.add(new JLabel("Quantity in cart"));
-		frame.add(new JLabel("Price"));
-		
-		JButton button = new JButton("Order");
-		button.addActionListener(new ActionListener() {
-			@Override 
-			public void actionPerformed(ActionEvent event) {
-				sendOrder(location);
-			}
-		});
-		frame.add(button);
-		
-		for(int i = 0 ; i < cart.size() ; i+=3) {
-			JTextField t1 = new JTextField(cart.get(i));
-			t1.setEditable(false);
-			frame.add(t1);
-			
-			JTextField t2 = new JTextField(cart.get(i+1));
-			t2.setEditable(false);
-			frame.add(t2);
-			
-			JTextField t3 = new JTextField(cart.get(i+2));
-			t3.setEditable(false);
-			frame.add(t3);
-			
-			double temp = Integer.parseInt(cart.get(i+1))*Double.parseDouble(cart.get(i+2));
-			JTextField t4 = new JTextField("Subtotal: " + temp);
-			t4.setEditable(false);
-			frame.add(t4);
-			sum+=temp;
+	public int removeFromCart(String product) {
+		if(cart.contains(product)) {
+			cart.remove(cart.indexOf(product)+1);
+			cart.remove(cart.indexOf(product)+1);
+			cart.remove(product);
+			return 1;
 		}
-		
-		JButton back = new JButton("Back");
-		goBack(frame,back,printout);
-		frame.add(back);
-		
-		frame.add(new JLabel(" "));
-		frame.add(new JLabel(" "));
-		
-		JTextField total = new JTextField("Total: " + sum);
-		total.setEditable(false);
-		frame.add(total);
-		
-		frame.setVisible(true);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		else return 0;
 	}
 	
-	public void sendOrder(String location) {
-		try {
-			printout.println("create");
-			printout.println(location);
-			sendCart();
-			int i = (int)objScan.readObject();
-			if(i == 0) {
-				JOptionPane.showMessageDialog(null, "Order creation failed!");
-			}
-			else if(i == 1) {
-				JOptionPane.showMessageDialog(null, "Order creation successful!");
-			}
-		}
-		catch(IOException | ClassNotFoundException e) {
-			e.printStackTrace();
-		}
+	public void replaceCart(List<String> newCart) {
+		cart.clear();
+		newCart.forEach(x -> cart.add(x));
 	}
 	
+	
+
+	//THIRD OPTION - REORDER PREVIOUS ORDER/////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////
 	public void optionThree(JButton button) {
 		try {
 			int count = (int) objScan.readObject();
@@ -261,7 +314,13 @@ public class Client extends User{
 					carts.add((List<String>) objScan.readObject());
 					locations[i] = objScan.readObject().toString();
 				}
-				reCreateOrder(carts,locations,button);
+				carts.removeIf(x -> x.isEmpty());
+				if(carts.isEmpty()) {
+					JOptionPane.showMessageDialog(null, "You have no recreatable orders!");
+					printout.println("back");
+					button.doClick();
+				}
+				else reCreateOrder(carts,locations,button);
 			}
 		} catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();
@@ -343,8 +402,8 @@ public class Client extends User{
 		button.addActionListener(new ActionListener() {
 			@Override 
 			public void actionPerformed(ActionEvent event) {
-				replaceCart(cart.get(move));
-				sendOrder(location[move]);
+				//replaceCart(cart.get(move));
+				sendOrder(location[move],cart.get(move));
 				frame.dispose();
 				optionThree(b1);
 			}
@@ -355,53 +414,15 @@ public class Client extends User{
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
 	
-	public void enterLocation() {
-		JFrame frame = new JFrame("Enter location");
-		frame.setSize(300, 100);
-		frame.setLayout(new GridLayout(1,2));
-		JTextField t1 = new JTextField();
-		frame.add(t1);
-		JButton b1 = new JButton("Confirm");
-		b1.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent event) {
-				frame.dispose();
-				createOrder(t1.getText());
-			}
-		});
-		frame.add(b1);
-		frame.setVisible(true);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-	}
+		
 	
-	public void replaceCart(List<String> newCart) {
-		cart.clear();
-		newCart.forEach(x -> cart.add(x));
-	}
-	
-	public int removeFromCart(String product) {
-		if(cart.contains(product)) {
-			cart.remove(cart.indexOf(product)+1);
-			cart.remove(cart.indexOf(product)+1);
-			cart.remove(product);
-			return 1;
-		}
-		else return 0;
-	}
-	
-	public void sendCart() {
-		printout.println(String.valueOf(cart.size()));
-		for(String str : cart) {
-			printout.println(str);
-		}
-	}
-	
+
+	//MISCELLANEOUS HELPER METHODS + GETTERS AND SETTERS///////////////////////
+	/////////////////////////////////////////////////////////////////////////
 	public void printCart() {
 		cart.forEach(x -> System.out.println(x));
 	}
-	
-	
-	
+
 	@Override
 	public void restart(PrintStream printout) {
 		super.setPrintout(this.printout);
@@ -409,7 +430,6 @@ public class Client extends User{
 		super.showMenu();
 	}
 	
-
 	public ObjectInputStream getObjScan() {
 		return objScan;
 	}

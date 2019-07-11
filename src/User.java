@@ -1,7 +1,6 @@
 import java.awt.event.*;
 import java.io.*;
 import java.net.Socket;
-import java.sql.*;
 import java.util.List;
 
 import javax.swing.*;
@@ -19,18 +18,15 @@ public class User {
 		showMenu();
 		
 	}
-	
-	public User(ObjectInputStream objScan,PrintStream printout) {
-		this.objScan = objScan;
-		this.printout = printout;
-	}
+
 	
 	public User() {
 		
 	}
 	
 	
-	
+	//SHOW LOGIN SCREEN//////////////////////////////////////////
+	/////////////////////////////////////////////////////////////
 	public void showMenu() {
 		 JFrame frame = new JFrame();
 		 frame.setTitle("Login");
@@ -78,11 +74,11 @@ public class User {
 					 List<Object> results =  (List<Object>) objScan.readObject();
 					 if(!results.isEmpty()) {
 						 switch(results.get(2).toString()) {
-						 	case "false" : new Client(objScan,printout,userField.getText());
+						 	case "false" : new Client(objScan,printout);
 						 			frame.dispose();
 						 			JOptionPane.showMessageDialog(null, "User logged successfully!");
 						 			break;
-						 	case "true" : new Admin(objScan,printout,userField.getText());
+						 	case "true" : new Admin(objScan,printout);
 						 			frame.dispose();
 						 			JOptionPane.showMessageDialog(null, "Admin logged successfully!");
 						 			break;
@@ -105,7 +101,11 @@ public class User {
 				 try {
 					 printout.println(userField.getText());
 					 printout.println(pass.getPassword());
-					 printout.println("register");
+					 if(pass.getPassword().length < 8) {
+						printout.println("fail");
+						JOptionPane.showMessageDialog(null,"Password needs to be at least 8 characters!");
+					 }
+					 else printout.println("register");
 					 int i = (int) objScan.readObject();
 					 //System.out.println(i);
 					 if(i == 0) {
@@ -113,16 +113,15 @@ public class User {
 						 throw new RegistrationException();
 					 }
 					 else {
-						 new Client(objScan,printout,userField.getText());
+						 new Client(objScan,printout);
 						 frame.dispose();
 						 JOptionPane.showMessageDialog(null, "Registration Successful!"); 
 					 }
 				 }
 				 catch(RegistrationException | IOException | ClassNotFoundException e) {
-					// closeResources();
 					 System.out.println(e.getMessage());
 					frame.dispose();
-					showMenu();
+					restart(printout);
 				 }
 			 }
 		 });
@@ -130,6 +129,10 @@ public class User {
 		 
 	}
 	
+
+	
+	//HELPER METHODS FOR CLIENT AND ADMIN + GETTERS AND SETTERS/////////////////
+	/////////////////////////////////////////////////////////////////////////
 	public void closeResources() {
 		try {
 			printout.close();
@@ -140,7 +143,7 @@ public class User {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public void logOut(JFrame frame,JButton button,PrintStream printout) {
 		button.addActionListener(new ActionListener() {
 			@Override
@@ -152,8 +155,6 @@ public class User {
 			}
 		});
 	}
-	
-	
 	
 	public void restart(PrintStream printout) {
 		setPrintout(printout);
